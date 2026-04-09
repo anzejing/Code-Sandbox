@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "command": "/data/1files/python-sandbox/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/data/1files/python-sandbox",
+      "env": {
+        "PYTHONPATH": "/data/1files/python-sandbox"
+      }
+    }
+  }
+}

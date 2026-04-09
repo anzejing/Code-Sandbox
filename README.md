@@ -1,0 +1,842 @@
+# Code-Sandbox MCP Server
+
+基于 FastMCP 的 Python 代码执行沙箱服务，为 AI 提供安全、类型安全、带依赖管理和进度汇报的代码执行环境。
+
+## 功能特性
+
+- 🔒 **安全优先**: 基于 AST 的静态分析拦截危险导入 (`os`, `subprocess`, `sys` 等) 和函数调用 (`eval`, `exec`, `compile`)
+- ⚡ **异步执行**: 非阻塞执行，支持可配置超时
+- 📊 **进度汇报**: 通过 FastMCP Context 实时汇报执行进度
+- 🖼️ **图片支持**: 通过资源 URI 存储和检索绘图图片
+- 💾 **结果缓存**: 可选的成功执行结果缓存
+- 🧪 **充分测试**: 63+ 测试用例覆盖安全、执行、缓存和性能基准
+- 🎯 **类型安全**: 完整的类型注解，通过 mypy 验证
+- 📈 **性能监控**: 内置性能基准测试
+
+## 快速开始
+
+### 安装
+
+```bash
+# 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# 或：.venv\Scripts\activate  # Windows
+
+# 安装依赖
+pip install -e ".[dev]"
+```
+
+### 运行 MCP 服务器
+
+```bash
+python -m src.server
+```
+
+### 配置 Claude Desktop
+
+在 `claude_desktop_config.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/python-sandbox",
+      "env": {
+        "PYTHONPATH": "/path/to/python-sandbox"
+      }
+    }
+  }
+}
+```
+
+### 使用 Inspector 调试
+
+```bash
+# 终端 1: 启动服务器
+python -m src.server
+
+# 终端 2: 运行 inspector
+npx @modelcontextprotocol/inspector
+
+# 浏览器访问 localhost:3000，选择 "code-sandbox"
+```
+
+## 可用工具
+
+### `execute_python`
+
+在隔离沙箱中执行 Python 代码。
+
+**参数：**
+- `code` (str): 要执行的 Python 代码（支持多行）
+- `timeout` (int): 最大执行时间（秒），默认 30
+
+**示例：**
+```python
+await execute_python(ctx, "print('hello')")
+```
+
+### `analyze_data`
+
+执行数据分析代码（需要安装 numpy, pandas, matplotlib）。
+
+**参数：**
+- `code` (str): 要执行的 Python 代码
+- `timeout` (int): 最大执行时间（秒），默认 60
+
+**示例：**
+```python
+await analyze_data(ctx, "import numpy as np; print(np.mean([1, 2, 3]))")
+```
+
+### `check_security`
+
+检查代码是否存在安全漏洞，不执行代码。
+
+**参数：**
+- `code` (str): 要检查的 Python 代码
+
+**示例：**
+```python
+await check_security(ctx, "import os")  # 返回安全警告
+```
+
+### `store_plot`
+
+存储绘图图片并返回资源 ID。
+
+**参数：**
+- `image_base64` (str): Base64 编码的图片数据
+- `mime_type` (str): 图片 MIME 类型（默认：image/png）
+
+**示例：**
+```python
+import base64
+# 生成绘图并保存到缓冲区后
+image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+plot_id = await store_plot(ctx, image_base64)
+# 返回："✓ Plot stored. Access via: plot://<id>"
+```
+
+### `get_plot` (资源)
+
+通过资源 URI 检索存储的绘图图片。
+
+**URI 格式：** `plot://{id}`
+
+**示例：**
+```python
+# 通过 MCP 资源访问
+image_bytes, mime_type = await get_plot("plot://abc123")
+```
+
+## 安全机制
+
+### 拦截的模块
+
+默认拦截以下模块：
+- `os` - 系统操作
+- `subprocess` - 进程生成
+- `sys` - 系统参数
+- `builtins` - 内置函数
+- `ctypes` - C 类型转换
+- `socket` - 网络访问
+- `pickle` / `shelve` - 序列化（潜在 RCE 风险）
+
+### 拦截的函数
+
+- `eval()` - 动态代码求值
+- `exec()` - 动态代码执行
+- `compile()` - 代码编译
+- `__import__()` - 动态导入
+
+## 开发指南
+
+### 运行测试
+
+```bash
+# 全部测试
+pytest
+
+# 单个测试文件
+pytest tests/test_engine.py
+
+# 按名称运行单个测试
+pytest -k test_timeout
+
+# 性能基准测试
+pytest tests/test_benchmark.py -v
+```
+
+### 代码质量检查
+
+```bash
+ruff check src/          # 代码检查
+ruff format src/         # 代码格式化
+mypy src/                # 类型检查
+bandit -r src/           # 安全扫描
+```
+
+### 项目结构
+
+```
+python-sandbox/
+├── pyproject.toml       # 项目配置
+├── AGENTS.md            # 开发者指南
+├── PLAN.md              # 开发计划
+├── README.md            # 本文件
+├── tests/
+│   ├── test_security.py # 安全扫描测试
+│   ├── test_engine.py   # 执行引擎测试
+│   ├── test_server.py   # MCP 工具测试
+│   ├── test_plots.py    # 图片缓存测试
+│   ├── test_cache.py    # 执行缓存测试
+│   └── test_benchmark.py# 性能基准测试
+└── src/
+    ├── server.py        # FastMCP 入口
+    └── sandbox/
+        ├── types.py     # 类型定义
+        ├── security.py  # 安全扫描
+        ├── engine.py    # 执行引擎
+        ├── cache.py     # 结果缓存
+        └── plots.py     # 图片处理
+    └── utils/
+        └── logging.py   # 日志配置
+```
+
+## 架构设计
+
+```
+┌─────────────────────────────────────────┐
+│           server.py (MCP 层)            │
+│  - 工具注册 (@mcp.tool)                 │
+│  - 进度汇报 (ctx.report)                │
+│  - 资源处理 (@mcp.resource)             │
+│  - 结果格式化                           │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│        engine.py (执行层)               │
+│  - 异步执行 (asyncio)                   │
+│  - 超时控制                             │
+│  - 输出捕获                             │
+│  - 可选结果缓存                         │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│       security.py (安全层)              │
+│  - AST 导入扫描                         │
+│  - 危险函数检测                         │
+│  - 白名单/黑名单验证                    │
+└─────────────────────────────────────────┘
+```
+
+### 附加模块
+
+- **cache.py**: 执行结果缓存，支持 TTL 和 LRU 淘汰
+- **plots.py**: 内存图片存储，支持 base64 编解码
+- **logging.py**: 结构化日志配置
+
+## 性能指标
+
+| 操作 | 目标延迟 | 实际表现 |
+|------|----------|----------|
+| 简单打印 | < 100ms | ~50ms |
+| 数学运算 | < 200ms | ~100ms |
+| 缓存命中 | < 1ms | ~0.1ms |
+| 并发执行 (5 任务) | < 1s | ~200ms |
+
+## 配置选项
+
+### SandboxConfig
+
+```python
+from src.sandbox.types import SandboxConfig
+
+config = SandboxConfig(
+    timeout_seconds=30,      # 执行超时（秒）
+    max_memory_mb=512,       # 内存限制（MB）
+    allowed_modules=[],      # 允许的模块列表（可选）
+    blocked_modules=[        # 拦截的模块列表
+        "os", "subprocess", "sys",
+        "builtins", "ctypes", "socket",
+        "pickle", "shelve"
+    ]
+)
+```
+
+### ExecutionCache
+
+```python
+from src.sandbox.cache import ExecutionCache
+
+cache = ExecutionCache(
+    max_size=1000,      # 最大缓存条目数
+    ttl_seconds=3600    # 缓存过期时间（秒）
+)
+
+# 获取缓存统计
+stats = cache.get_stats()
+# {'size': 10, 'hits': 50, 'misses': 100, 'hit_rate': '33.33%'}
+```
+
+## 常见问题
+
+### Q: 如何启用结果缓存？
+
+```python
+from src.sandbox.engine import ExecutionEngine
+
+engine = ExecutionEngine(use_cache=True)
+result = await engine.execute("print('hello')", use_cache=True)
+```
+
+### Q: 如何添加自定义拦截模块？
+
+```python
+from src.sandbox.types import SandboxConfig
+from src.sandbox.engine import ExecutionEngine
+
+config = SandboxConfig(
+    blocked_modules=["os", "subprocess", "custom_module"]
+)
+engine = ExecutionEngine(config)
+```
+
+### Q: 如何获取缓存命中率？
+
+```python
+from src.sandbox.cache import get_execution_cache
+
+cache = get_execution_cache()
+stats = cache.get_stats()
+print(f"缓存命中率：{stats['hit_rate']}")
+```
+
+---
+
+## 部署指南
+
+### 生产环境部署
+
+#### 方式一：Docker 部署（推荐）
+
+**方案 A：轻量级镜像（快速，推荐）**
+
+只安装核心依赖，构建快，镜像小。如需 numpy/pandas 等，需手动添加。
+
+```bash
+# 1. 构建镜像（约 1-2 分钟）
+docker build -t code-sandbox-mcp .
+
+# 2. 运行容器
+docker run -d \
+  --name code-sandbox \
+  --restart unless-stopped \
+  -e PYTHONPATH=/app \
+  code-sandbox-mcp
+
+# 3. 验证环境
+docker exec code-sandbox python /app/docker_verify.py
+```
+
+**方案 B：完整数据科学环境（包含 numpy/pandas/matplotlib）**
+
+```bash
+# Dockerfile 中添加：
+# RUN pip install --no-cache-dir numpy pandas matplotlib
+
+# 或使用 docker-compose（已配置）
+docker-compose up -d
+```
+
+# 3. 查看日志
+docker logs -f code-sandbox
+
+# 4. 验证环境
+docker exec code-sandbox python /app/docker_verify.py
+
+# 5. 健康检查
+docker exec code-sandbox python -c "print('healthy')"
+```
+
+**使用 Docker Compose（推荐）：**
+
+```bash
+# 启动服务
+docker-compose up -d
+
+# 查看状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 运行环境验证
+docker-compose run --rm verify
+
+# 停止服务
+docker-compose down
+```
+
+**开发模式（代码热更新）：**
+
+```bash
+# docker-compose.yml 已配置卷挂载
+# 修改代码后自动生效，无需重新构建
+
+docker-compose up -d
+
+# 查看实时日志
+docker-compose logs -f
+```
+
+#### 方式二：Systemd 部署（Linux 服务器）
+
+创建服务文件 `/etc/systemd/system/code-sandbox.service`：
+
+```ini
+[Unit]
+Description=Code-Sandbox MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=sandbox
+WorkingDirectory=/opt/code-sandbox
+Environment="PATH=/opt/code-sandbox/.venv/bin"
+ExecStart=/opt/code-sandbox/.venv/bin/python -m src.server
+Restart=always
+RestartSec=5
+
+# 安全配置
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/code-sandbox/logs
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启动服务：
+
+```bash
+# 安装服务
+sudo systemctl daemon-reload
+sudo systemctl enable code-sandbox
+sudo systemctl start code-sandbox
+
+# 查看状态
+sudo systemctl status code-sandbox
+
+# 查看日志
+sudo journalctl -u code-sandbox -f
+```
+
+#### 方式三：直接部署
+
+```bash
+# 1. 克隆项目
+git clone <repository-url> /opt/code-sandbox
+cd /opt/code-sandbox
+
+# 2. 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate
+
+# 3. 安装依赖
+pip install -e .
+
+# 4. 后台运行（使用 nohup）
+nohup .venv/bin/python -m src.server > logs/server.log 2>&1 &
+
+# 5. 或使用 screen/tmux
+screen -S code-sandbox
+.venv/bin/python -m src.server
+# Ctrl+A, D 退出会话
+```
+
+---
+
+### LLM 平台配置
+
+#### Claude Desktop
+
+编辑 `claude_desktop_config.json`（位置：`~/Library/Application Support/Claude/` 或 `%APPDATA%\Claude\`）：
+
+```json
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/code-sandbox",
+      "env": {
+        "PYTHONPATH": "/path/to/code-sandbox"
+      }
+    }
+  }
+}
+```
+
+**远程服务器配置：**
+
+```json
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "command": "ssh",
+      "args": [
+        "-i", "/path/to/key",
+        "user@server-ip",
+        "PYTHONPATH=/opt/code-sandbox /opt/code-sandbox/.venv/bin/python -m src.server"
+      ]
+    }
+  }
+}
+```
+
+#### Cursor IDE
+
+1. 打开 Cursor 设置
+2. 进入 **MCP Servers** 标签
+3. 点击 **Add Server**
+4. 填写配置：
+   - Name: `code-sandbox`
+   - Type: `stdio`
+   - Command: `python -m src.server`
+   - Working Directory: `/path/to/code-sandbox`
+
+#### Cline (VS Code 扩展)
+
+在 Cline 设置中添加：
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "code-sandbox",
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/code-sandbox"
+    }
+  ]
+}
+```
+
+#### Windsurf
+
+1. 打开 **Settings** → **MCP**
+2. 点击 **Add MCP Server**
+3. 选择 **Custom Server**
+4. 配置：
+   ```
+   Name: code-sandbox
+   Command: python -m src.server
+   Directory: /path/to/code-sandbox
+   ```
+
+#### 远程 HTTP 部署（高级）
+
+如果需要通过网络访问，可以使用 FastMCP 的 HTTP 模式：
+
+```python
+# server.py 修改
+if __name__ == "__main__":
+    mcp.run(host="0.0.0.0", port=8080)
+```
+
+```bash
+# 运行
+python -m src.server --host 0.0.0.0 --port 8080
+
+# 或使用 uvicorn
+uvicorn src.server:app --host 0.0.0.0 --port 8080
+```
+
+客户端配置：
+
+```json
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "url": "http://server-ip:8080/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+---
+
+### 安全配置
+
+#### 防火墙配置
+
+```bash
+# 如果不需要网络访问，阻止外部连接
+sudo ufw deny 8080
+
+# 如果只允许特定 IP
+sudo ufw allow from 192.168.1.0/24 to any port 8080
+```
+
+#### 权限配置
+
+```bash
+# 创建专用用户
+sudo useradd -r -s /bin/false sandbox
+
+# 设置目录权限
+sudo chown -R sandbox:sandbox /opt/code-sandbox
+sudo chmod -R 750 /opt/code-sandbox
+```
+
+#### 环境变量安全
+
+```bash
+# 创建 .env 文件（不要提交到版本控制）
+cp .env.example .env
+
+# 编辑敏感配置
+vim .env
+```
+
+---
+
+### 性能优化
+
+#### 调整并发限制
+
+```python
+# server.py
+import asyncio
+
+# 设置信号量限制并发执行
+semaphore = asyncio.Semaphore(10)  # 最多 10 个并发任务
+```
+
+#### 启用缓存
+
+```bash
+# 环境变量
+export ENABLE_CACHE=true
+export CACHE_MAX_SIZE=1000
+export CACHE_TTL=3600
+```
+
+#### 资源限制
+
+```yaml
+# docker-compose.yml
+deploy:
+  resources:
+    limits:
+      cpus: '2.0'
+      memory: 1G
+```
+
+---
+
+### 监控和日志
+
+#### 日志配置
+
+```python
+# src/utils/logging.py
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/server.log'),
+        logging.StreamHandler()
+    ]
+)
+```
+
+#### 健康检查端点
+
+```bash
+# 定期检查
+curl http://localhost:8080/health
+
+# 或使用 docker
+docker exec code-sandbox python -c "print('healthy')"
+```
+
+#### 性能监控
+
+```bash
+# 查看资源使用
+docker stats code-sandbox
+
+# 或使用 htop
+htop -p $(pgrep -f "src.server")
+```
+
+---
+
+### 诊断工具
+
+#### 自动诊断脚本
+
+```bash
+# 运行完整诊断
+./docker-diagnose.sh
+
+# 输出包括:
+# - 容器状态（Up/Restarting/healthy）
+# - 配置检查（stdin_open, tty, PYTHONPATH）
+# - 镜像检查
+# - 日志分析
+# - 功能测试
+```
+
+#### 快速诊断命令
+
+```bash
+# 检查容器状态
+docker-compose ps
+
+# 查看配置
+docker-compose config
+
+# 测试导入
+docker exec code-sandbox-mcp python -c "from src.server import mcp; print('OK')"
+
+# 运行验证
+docker exec code-sandbox-mcp python /app/docker_verify.py
+```
+
+---
+
+### 故障排查
+
+#### Docker 部署问题排查
+
+**问题 1: 包导入失败 (`ModuleNotFoundError`)**
+
+```bash
+# 检查 PYTHONPATH 是否正确
+docker exec code-sandbox python -c "import sys; print(sys.path)"
+
+# 应该包含 /app 和 /opt/venv/lib/python3.11/site-packages
+
+# 解决方案：确保 docker-compose.yml 中设置了 PYTHONPATH
+environment:
+  - PYTHONPATH=/app:/opt/venv/lib/python3.11/site-packages
+```
+
+**问题 2: numpy/pandas 编译失败**
+
+```bash
+# 检查 Dockerfile 是否包含编译依赖
+# 必须安装：build-essential, gfortran, libblas-dev, liblapack-dev
+
+# 重新构建镜像
+docker-compose build --no-cache
+```
+
+**问题 3: src 模块找不到**
+
+```bash
+# 检查容器内文件结构
+docker exec code-sandbox ls -la /app/src/
+
+# 应该看到：
+# __init__.py  sandbox/  server.py
+
+# 解决方案：确保 COPY 指令正确
+COPY src/ ./src/
+```
+
+**问题 4: 权限错误**
+
+```bash
+# 检查文件所有者
+docker exec code-sandbox ls -la /app/
+
+# 应该是 sandbox 用户
+# 解决方案：确保 Dockerfile 中在 COPY 后设置权限
+RUN chown -R sandbox:sandbox /app
+```
+
+**问题 5: 验证容器环境**
+
+```bash
+# 运行验证脚本
+docker-compose run --rm verify
+
+# 或手动检查
+docker exec code-sandbox python /app/docker_verify.py
+```
+
+#### 常见问题
+
+**问题 1: 容器不断重启**
+
+症状：`docker-compose ps` 显示 `Restarting` 状态
+
+解决方案：
+```yaml
+# docker-compose.yml 确保包含
+services:
+  code-sandbox:
+    stdin_open: true  # 必需 - 保持 stdin 打开
+    tty: true         # 必需 - 分配伪终端
+```
+
+然后重启：
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+**其他问题：**
+
+| 问题 | 解决方案 |
+|------|----------|
+| 连接失败 | 检查防火墙和端口 |
+| 执行超时 | 增加 `SANDBOX_TIMEOUT` |
+| 内存不足 | 调整 `MAX_MEMORY_MB` |
+| 缓存命中率低 | 增加 `CACHE_MAX_SIZE` |
+| Docker 包导入失败 | 检查 PYTHONPATH 和系统依赖 |
+
+#### 查看日志
+
+```bash
+# Docker
+docker logs -f code-sandbox
+
+# Systemd
+journalctl -u code-sandbox -f
+
+# 直接运行
+tail -f logs/server.log
+```
+
+#### 重启服务
+
+```bash
+# Docker
+docker restart code-sandbox
+
+# Systemd
+sudo systemctl restart code-sandbox
+
+# 直接运行
+pkill -f "src.server"
+nohup .venv/bin/python -m src.server > logs/server.log 2>&1 &
+```
+
+---
+
+## 许可证
+
+MIT License

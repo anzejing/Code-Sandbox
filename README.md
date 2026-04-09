@@ -634,7 +634,7 @@ deploy:
   resources:
     limits:
       cpus: '2.0'
-      memory: 1G
+      memory: 2G
 ```
 
 ---
@@ -723,11 +723,11 @@ docker exec code-sandbox-mcp python /app/docker_verify.py
 # 检查 PYTHONPATH 是否正确
 docker exec code-sandbox python -c "import sys; print(sys.path)"
 
-# 应该包含 /app 和 /opt/venv/lib/python3.11/site-packages
+# 应该包含 /app
 
 # 解决方案：确保 docker-compose.yml 中设置了 PYTHONPATH
 environment:
-  - PYTHONPATH=/app:/opt/venv/lib/python3.11/site-packages
+  - PYTHONPATH=/app
 ```
 
 **问题 2: numpy/pandas 编译失败**

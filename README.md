@@ -572,20 +572,19 @@ screen -S code-sandbox
 
 #### 远程 HTTP 部署（高级）
 
-如果需要通过网络访问，可以使用 FastMCP 的 HTTP 模式：
-
-```python
-# server.py 修改
-if __name__ == "__main__":
-    mcp.run(host="0.0.0.0", port=8080)
-```
+如需通过网络访问，使用 HTTP/SSE 模式：
 
 ```bash
-# 运行
-python -m src.server --host 0.0.0.0 --port 8080
+# 修改 docker-compose.yml
+environment:
+  - MCP_TRANSPORT=http
+  - MCP_PORT=8765
+ports:
+  - "8765:8765"
 
-# 或使用 uvicorn
-uvicorn src.server:app --host 0.0.0.0 --port 8080
+# 重启服务
+docker-compose down
+docker-compose up -d
 ```
 
 客户端配置：
@@ -594,7 +593,7 @@ uvicorn src.server:app --host 0.0.0.0 --port 8080
 {
   "mcpServers": {
     "code-sandbox": {
-      "url": "http://server-ip:8080/sse",
+      "url": "http://server-ip:8765/sse",
       "transport": "sse"
     }
   }
@@ -609,10 +608,10 @@ uvicorn src.server:app --host 0.0.0.0 --port 8080
 
 ```bash
 # 如果不需要网络访问，阻止外部连接
-sudo ufw deny 8080
+sudo ufw deny 8765
 
 # 如果只允许特定 IP
-sudo ufw allow from 192.168.1.0/24 to any port 8080
+sudo ufw allow from 192.168.1.0/24 to any port 8765
 ```
 
 #### 权限配置
@@ -694,7 +693,7 @@ logging.basicConfig(
 
 ```bash
 # 定期检查
-curl http://localhost:8080/health
+curl http://localhost:8765/sse
 
 # 或使用 docker
 docker exec code-sandbox python -c "print('healthy')"

@@ -227,7 +227,7 @@ ssh user@your-server.com "docker ps"
 # 编辑 .env 文件
 MCP_TRANSPORT=http
 MCP_HOST=0.0.0.0
-MCP_PORT=8080
+MCP_PORT=8765
 ```
 
 **方法 B: 修改 docker-compose.yml**
@@ -253,7 +253,7 @@ docker-compose up -d
 
 # 查看日志确认 HTTP 模式启动
 docker-compose logs | grep "HTTP mode"
-# 应显示：Starting MCP server in HTTP mode on 0.0.0.0:8080
+# 应显示：Starting MCP server in HTTP mode (SSE streaming) on 0.0.0.0:8765
 ```
 
 #### 步骤 3: LLM 配置

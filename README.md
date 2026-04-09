@@ -382,16 +382,13 @@ docker-compose run --rm verify
 docker-compose down
 ```
 
-**开发模式（代码热更新）：**
+**注意：** 当前 `docker-compose.yml` 配置为生产模式，不包含代码热更新。如需开发模式，请手动添加卷挂载：
 
-```bash
-# docker-compose.yml 已配置卷挂载
-# 修改代码后自动生效，无需重新构建
-
-docker-compose up -d
-
-# 查看实时日志
-docker-compose logs -f
+```yaml
+# docker-compose.yml 中添加
+volumes:
+  - ./src:/app/src:ro
+  - ./logs:/app/logs
 ```
 
 #### 方式二：Systemd 部署（Linux 服务器）

@@ -728,7 +728,10 @@ htop -p $(pgrep -f "src.server")
 #### 自动诊断脚本
 
 ```bash
-# 运行完整诊断
+# 1. 首次使用需要添加执行权限
+chmod +x docker-diagnose.sh
+
+# 2. 运行完整诊断
 ./docker-diagnose.sh
 
 # 输出包括:

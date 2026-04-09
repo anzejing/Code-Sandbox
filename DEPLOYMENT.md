@@ -341,7 +341,10 @@ networks:
 ### 自动诊断脚本
 
 ```bash
-# 运行诊断
+# 1. 首次使用需要添加执行权限
+chmod +x docker-diagnose.sh
+
+# 2. 运行诊断
 ./docker-diagnose.sh
 
 # 检查项目:

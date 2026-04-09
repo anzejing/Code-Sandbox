@@ -362,7 +362,7 @@ environment:
   - MCP_HOST=0.0.0.0
   - MCP_PORT=8765  # 使用不常用端口
 
-# 开放端口
+# 开放端口（HTTP 模式）
 ports:
   - "8765:8765"
 

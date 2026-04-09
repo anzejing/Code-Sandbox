@@ -13,7 +13,7 @@ services:
       - MCP_TRANSPORT=stdio
       # HTTP 模式配置（仅当 MCP_TRANSPORT=http 时使用）
       - MCP_HOST=0.0.0.0
-      - MCP_PORT=8080
+      - MCP_PORT=8765
       # 沙箱配置
       - SANDBOX_TIMEOUT=30
       - MAX_MEMORY_MB=512

@@ -339,7 +339,7 @@ docker-compose up -d
 docker exec code-sandbox-mcp python /app/docker_verify.py
 ```
 
-**方案 C：HTTP 模式（远程访问）**
+**方案 C：HTTP 模式（远程访问，支持 SSE 流式传输）**
 
 如需通过网络远程访问 MCP 服务：
 
@@ -348,11 +348,11 @@ docker exec code-sandbox-mcp python /app/docker_verify.py
 environment:
   - MCP_TRANSPORT=http  # 切换为 HTTP 模式
   - MCP_HOST=0.0.0.0
-  - MCP_PORT=8080
+  - MCP_PORT=8765  # 使用不常用端口
 
 # 开放端口
 ports:
-  - "8080:8080"
+  - "8765:8765"
 
 # 2. 重启服务
 docker-compose down
@@ -360,6 +360,7 @@ docker-compose up -d
 
 # 3. 查看日志确认 HTTP 模式启动
 docker-compose logs | grep "HTTP mode"
+# 应显示：Starting MCP server in HTTP mode (SSE streaming) on 0.0.0.0:8765
 ```
 
 LLM 配置（HTTP/SSE 模式）：
@@ -368,7 +369,7 @@ LLM 配置（HTTP/SSE 模式）：
 {
   "mcpServers": {
     "code-sandbox": {
-      "url": "http://your-server-ip:8080/sse",
+      "url": "http://your-server-ip:8765/sse",
       "transport": "sse"
     }
   }

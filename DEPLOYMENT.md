@@ -238,10 +238,10 @@ services:
     environment:
       - MCP_TRANSPORT=http  # 切换为 HTTP 模式
       - MCP_HOST=0.0.0.0
-      - MCP_PORT=8080
+      - MCP_PORT=8765  # 使用不常用端口，避免冲突
     # 开放端口
     ports:
-      - "8080:8080"
+      - "8765:8765"
 ```
 
 #### 步骤 2: 重启服务
@@ -262,7 +262,7 @@ docker-compose logs | grep "HTTP mode"
 {
   "mcpServers": {
     "code-sandbox": {
-      "url": "http://your-server-ip:8080/sse",
+      "url": "http://your-server-ip:8765/sse",
       "transport": "sse"
     }
   }
@@ -273,7 +273,7 @@ docker-compose logs | grep "HTTP mode"
 
 ```bash
 # 测试 HTTP 端点
-curl http://localhost:8080/sse
+curl http://localhost:8765/sse
 
 # 应返回 SSE 连接信息
 ```

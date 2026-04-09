@@ -205,18 +205,21 @@ def main() -> None:
 
     Supports two modes via MCP_TRANSPORT environment variable:
     - stdio (default): Standard I/O for local Docker execution
-    - http: HTTP/SSE for remote access
+    - http: HTTP with SSE streaming for remote access
     """
     import os
 
     transport = os.getenv("MCP_TRANSPORT", "stdio").lower()
 
     if transport == "http":
-        # HTTP mode for remote access
+        # HTTP mode with SSE streaming for remote access
         host = os.getenv("MCP_HOST", "0.0.0.0")
-        port = int(os.getenv("MCP_PORT", "8080"))
-        print(f"Starting MCP server in HTTP mode on {host}:{port}")
-        mcp.run(host=host, port=port)
+        port = int(os.getenv("MCP_PORT", "8765"))
+        print(f"Starting MCP server in HTTP mode (SSE streaming) on {host}:{port}")
+        print(f"Endpoints:")
+        print(f"  - SSE: http://{host}:{port}/sse")
+        print(f"  - HTTP POST: http://{host}:{port}/message")
+        mcp.run(host=host, port=port, transport="sse")
     else:
         # stdio mode (default) for local Docker/LLM integration
         print("Starting MCP server in stdio mode")

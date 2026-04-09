@@ -36,4 +36,5 @@ htmlcov/
 *.tar
 
 # Environment
+.env
 .env.local

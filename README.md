@@ -18,12 +18,20 @@
 ### 安装
 
 ```bash
-# 创建虚拟环境
+# 1. 克隆项目
+git clone https://github.com/anzejing/Code-Sandbox.git
+cd Code-Sandbox
+
+# 2. 复制配置文件（首次部署必需）
+cp .env.example .env
+cp docker-compose.yml.example docker-compose.yml
+
+# 3. 创建虚拟环境
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # 或：.venv\Scripts\activate  # Windows
 
-# 安装依赖
+# 4. 安装依赖
 pip install -e ".[dev]"
 ```
 
@@ -329,13 +337,17 @@ print(f"缓存命中率：{stats['hit_rate']}")
 只安装核心依赖，构建快，镜像小。如需 numpy/pandas 等，需手动添加。
 
 ```bash
-# 1. 构建镜像（约 1-2 分钟）
+# 1. 复制配置文件（首次部署必需）
+cp .env.example .env
+cp docker-compose.yml.example docker-compose.yml
+
+# 2. 构建镜像（约 1-2 分钟）
 docker-compose build
 
-# 2. 运行容器（默认 stdio 模式）
+# 3. 运行容器（默认 stdio 模式）
 docker-compose up -d
 
-# 3. 验证环境
+# 4. 验证环境
 docker exec code-sandbox-mcp python /app/docker_verify.py
 ```
 

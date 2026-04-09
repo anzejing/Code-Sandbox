@@ -37,4 +37,8 @@ htmlcov/
 
 # Environment
 .env
+.docker-compose.yml
 .env.local
+
+# Docker Compose local overrides
+docker-compose.override.yml

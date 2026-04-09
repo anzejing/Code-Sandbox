@@ -2,17 +2,30 @@
 
 ## 快速部署（5 分钟）
 
-### 1. 构建并启动
+### 1. 复制配置文件
 
 ```bash
 # 进入项目目录
 cd /path/to/code-sandbox
 
-# 构建镜像（首次约 5-10 分钟，包含 numpy/pandas/matplotlib）
+# 复制配置文件（首次部署必需）
+cp .env.example .env
+cp docker-compose.yml.example docker-compose.yml
+
+# 根据需要修改配置
+vim .env
+vim docker-compose.yml
+```
+
+### 2. 构建并启动
+
+```bash
+# 构建镜像（首次约 5-10 分钟）
 docker-compose build
 
 # 启动服务
 docker-compose up -d
+```
 
 # 查看状态（应该显示 Up (healthy)）
 docker-compose ps

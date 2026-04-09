@@ -9,6 +9,11 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      # MCP 传输模式：stdio (默认) 或 http
+      - MCP_TRANSPORT=stdio
+      # HTTP 模式配置（仅当 MCP_TRANSPORT=http 时使用）
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
       # 沙箱配置
       - SANDBOX_TIMEOUT=30
       - MAX_MEMORY_MB=512
@@ -43,6 +48,9 @@ services:
     tmpfs:
       - /tmp
       - /app/logs
+    # HTTP 模式：开放端口（当 MCP_TRANSPORT=http 时取消注释）
+    # ports:
+    #   - "8080:8080"
     # 禁用网络（如不需要访问外部 API）
     # network_mode: "none"
     # 或限制网络访问

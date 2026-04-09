@@ -330,17 +330,49 @@ print(f"缓存命中率：{stats['hit_rate']}")
 
 ```bash
 # 1. 构建镜像（约 1-2 分钟）
-docker build -t code-sandbox-mcp .
+docker-compose build
 
-# 2. 运行容器
-docker run -d \
-  --name code-sandbox \
-  --restart unless-stopped \
-  -e PYTHONPATH=/app \
-  code-sandbox-mcp
+# 2. 运行容器（默认 stdio 模式）
+docker-compose up -d
 
 # 3. 验证环境
-docker exec code-sandbox python /app/docker_verify.py
+docker exec code-sandbox-mcp python /app/docker_verify.py
+```
+
+**方案 C：HTTP 模式（远程访问）**
+
+如需通过网络远程访问 MCP 服务：
+
+```bash
+# 1. 修改 docker-compose.yml
+environment:
+  - MCP_TRANSPORT=http  # 切换为 HTTP 模式
+  - MCP_HOST=0.0.0.0
+  - MCP_PORT=8080
+
+# 开放端口
+ports:
+  - "8080:8080"
+
+# 2. 重启服务
+docker-compose down
+docker-compose up -d
+
+# 3. 查看日志确认 HTTP 模式启动
+docker-compose logs | grep "HTTP mode"
+```
+
+LLM 配置（HTTP/SSE 模式）：
+
+```json
+{
+  "mcpServers": {
+    "code-sandbox": {
+      "url": "http://your-server-ip:8080/sse",
+      "transport": "sse"
+    }
+  }
+}
 ```
 
 **方案 B：完整数据科学环境（包含 numpy/pandas/matplotlib）**

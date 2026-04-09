@@ -215,26 +215,45 @@ ssh user@your-server.com "docker ps"
 
 ---
 
-### 方式三：HTTP/SSE 模式（高级）
+### 方式三：HTTP/SSE 模式（远程访问）
 
-通过 HTTP 暴露 MCP 服务：
+通过 HTTP 暴露 MCP 服务，支持远程 LLM 连接。
 
-#### 步骤 1: 修改 docker-compose.yml
+#### 步骤 1: 配置环境变量
+
+**方法 A: 使用 .env 文件**
+
+```bash
+# 编辑 .env 文件
+MCP_TRANSPORT=http
+MCP_HOST=0.0.0.0
+MCP_PORT=8080
+```
+
+**方法 B: 修改 docker-compose.yml**
 
 ```yaml
 services:
   code-sandbox:
-    # ... 其他配置 ...
+    environment:
+      - MCP_TRANSPORT=http  # 切换为 HTTP 模式
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+    # 开放端口
     ports:
       - "8080:8080"
-    command: ["python", "-m", "src.server", "--host", "0.0.0.0", "--port", "8080"]
 ```
 
 #### 步骤 2: 重启服务
 
 ```bash
+# 应用配置
 docker-compose down
 docker-compose up -d
+
+# 查看日志确认 HTTP 模式启动
+docker-compose logs | grep "HTTP mode"
+# 应显示：Starting MCP server in HTTP mode on 0.0.0.0:8080
 ```
 
 #### 步骤 3: LLM 配置
@@ -248,6 +267,15 @@ docker-compose up -d
     }
   }
 }
+```
+
+#### 步骤 4: 测试连接
+
+```bash
+# 测试 HTTP 端点
+curl http://localhost:8080/sse
+
+# 应返回 SSE 连接信息
 ```
 
 ---
